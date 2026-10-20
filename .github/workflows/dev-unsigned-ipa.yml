@@ -28,7 +28,9 @@ jobs:
         with:
           xcode-version: '26.3'
       - name: Check development identity
-        run: python3 scripts/verify_dev_build.py
+        run: |
+          python3 scripts/verify_dev_build.py
+          python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Test dictionary import package
         if: hashFiles('DictionaryImport/Package.swift') != ''
         run: swift test --package-path DictionaryImport --parallel
@@ -71,6 +73,10 @@ jobs:
           (cd build/ipa && /usr/bin/zip -q -r -y ../azooKey-Dev-unsigned.ipa Payload)
           python3 scripts/verify_dev_build.py --ipa build/azooKey-Dev-unsigned.ipa
           shasum -a 256 build/azooKey-Dev-unsigned.ipa > build/azooKey-Dev-unsigned.ipa.sha256
+          python3 scripts/prepare_resign_ipa.py build/ipa/Payload/azooKey.app
+          (cd build/ipa && /usr/bin/zip -q -r -y ../azooKey-Dev-resign.ipa Payload)
+          python3 scripts/verify_dev_build.py --ipa build/azooKey-Dev-resign.ipa --allow-adhoc
+          shasum -a 256 build/azooKey-Dev-resign.ipa > build/azooKey-Dev-resign.ipa.sha256
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
@@ -78,6 +84,8 @@ jobs:
           path: |
             build/azooKey-Dev-unsigned.ipa
             build/azooKey-Dev-unsigned.ipa.sha256
+            build/azooKey-Dev-resign.ipa
+            build/azooKey-Dev-resign.ipa.sha256
           if-no-files-found: error
           retention-days: 14
       - name: Upload verification logs
