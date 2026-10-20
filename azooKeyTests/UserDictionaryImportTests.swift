@@ -73,6 +73,19 @@ final class UserDictionaryImportTests: XCTestCase {
         XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: directory.path).isEmpty)
     }
 
+    func testLargeHotfixDeduplicationKeepsDifferentWordsAndReadings() {
+        let userItems = (0..<10_000).map { index in
+            UserDictionaryData(ruby: "あ", word: "語\(index)", isVerb: false, isPersonName: false, isPlaceName: false, id: index)
+        }
+        func entry(_ word: String, _ ruby: String) -> HotfixDictionaryV1.Entry {
+            .init(word: word, ruby: ruby, wordWeight: -5, lcid: 0, rcid: 0, mid: 0, date: "", author: "")
+        }
+        let hotfix = (0..<10_000).map { entry("語\($0)", "ア") } + [entry("残す", "ア"), entry("語0", "イ")]
+        let result = UserDictionaryUpdater.removingRegisteredWords(from: hotfix, userItems: userItems)
+        XCTAssertEqual(result.map(\.word), ["残す", "語0"])
+        XCTAssertEqual(result.map(\.ruby), ["ア", "イ"])
+    }
+
     func testGeneratedFilesRollbackAfterPublishFailure() throws {
         let manager = FailingMoveFileManager()
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)

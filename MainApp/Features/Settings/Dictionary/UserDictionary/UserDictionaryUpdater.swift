@@ -23,6 +23,15 @@ struct UserDictionaryUpdater {
     let additionalSystemDictionaries: [AdditionalSystemDictionarySetting.SystemDictionaryType]
     let denylist: Set<String>
 
+    static func removingRegisteredWords(
+        from hotfix: [HotfixDictionaryV1.Entry], userItems: [UserDictionaryData]
+    ) -> [HotfixDictionaryV1.Entry] {
+        let registered = userItems.reduce(into: [String: Set<String>]()) { words, item in
+            words[item.ruby.toKatakana(), default: []].insert(item.word)
+        }
+        return hotfix.filter { !(registered[$0.ruby.toKatakana()]?.contains($0.word) ?? false) }
+    }
+
     /// `LOUDSBuilder.init`
     /// - Parameters:
     ///   - additionalSystemDictionaries: "emoji" and "kaomoji" can be in this
@@ -138,11 +147,7 @@ struct UserDictionaryUpdater {
         guard !char2UInt8.isEmpty else { throw CocoaError(.fileReadCorruptFile) }
         var (paths, useradds, hotfix) = self.loadUserDictInfo(userDictionary: userDictionary)
         // 重複削除（ユーザ辞書とホットフィックスの重複を取り除く）
-        hotfix = hotfix.filter { hotfixEntry in
-            !useradds.contains {
-                $0.word == hotfixEntry.word && $0.ruby.toKatakana() == hotfixEntry.ruby.toKatakana()
-            }
-        }
+        hotfix = Self.removingRegisteredWords(from: hotfix, userItems: useradds)
 
         // すべての行を読み込んで、DicdataElementへ変換
         var entries: [DicdataElement] = []
