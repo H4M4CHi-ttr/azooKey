@@ -117,11 +117,14 @@ jobs:
           with open(os.environ['GITHUB_ENV'], 'a') as env:
               env.write('SIMULATOR_ID=' + candidates[0]['udid'] + '\n')
           PY
-      - name: Swift unit tests on iOS simulator
+      - name: Dictionary import integration regressions
+        id: import-tests
         run: |
           set -o pipefail
           xcodebuild test -project azooKey.xcodeproj -scheme azooKeyTests \
             -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -only-testing:azooKeyTests/UserDictionaryImportTests \
+            -only-testing:azooKeyTests/ResizingWidthToleranceTests \
             -derivedDataPath build/tests -resultBundlePath build/DevTests.xcresult \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM= \
             | tee "$RUNNER_TEMP/dev-tests.log"
@@ -159,6 +162,23 @@ jobs:
             build/azooKey-Dev-resign.ipa.sha256
           if-no-files-found: error
           retention-days: 1
+      - name: Existing converter and keyboard regressions
+        id: legacy-tests
+        run: |
+          set -o pipefail
+          xcodebuild test -project azooKey.xcodeproj -scheme azooKeyTests \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -skip-testing:azooKeyTests/UserDictionaryImportTests \
+            -skip-testing:azooKeyTests/ResizingWidthToleranceTests \
+            -derivedDataPath build/tests -resultBundlePath build/LegacyTests.xcresult \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM= \
+            | tee "$RUNNER_TEMP/legacy-tests.log"
+      - name: Record separate test outcomes
+        if: always()
+        run: |
+          printf 'Import integration tests: %s\n\nExisting regressions: %s\n' \
+            '${{ steps.import-tests.outcome }}' '${{ steps.legacy-tests.outcome }}' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Existing regression failures remain failures; the IPA is produced only after the import integration tests pass.' >> "$GITHUB_STEP_SUMMARY"
       - name: Upload verification logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -168,7 +188,9 @@ jobs:
             ${{ runner.temp }}/dev-tests.log
             ${{ runner.temp }}/dev-build.log
             ${{ runner.temp }}/baseline-build.log
+            ${{ runner.temp }}/legacy-tests.log
             build/DevTests.xcresult
+            build/LegacyTests.xcresult
           retention-days: 1
       - name: Save build cache
         if: always() && steps.build-cache.outputs.cache-hit != 'true'
