@@ -162,7 +162,7 @@ public enum DictionaryImporter {
         let (decoded, encoding) = try decode(data)
         preview.encoding = encoding
         let text = decoded.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
-        let separator = delimiter(in: text)
+        let separator: Character = fileExtension.lowercased() == "csv" ? "," : fileExtension.lowercased() == "tsv" ? "\t" : delimiter(in: text)
         var header: (ruby: Int, word: Int, pos: Int?)?
         var firstRecord = true
 
@@ -247,6 +247,18 @@ public enum DictionaryImporter {
     private static func scan(
         _ text: String, separator: Character, consume: ([String], Bool) throws -> Void
     ) throws {
+        // Mozc/MS-IME TSV fields are literal; quotes are part of the word.
+        if separator == "\t" {
+            var start = text.startIndex
+            while start < text.endIndex {
+                let end = text[start...].firstIndex(of: "\n") ?? text.endIndex
+                let fields = text[start..<end].split(separator: "\t", maxSplits: 64, omittingEmptySubsequences: false)
+                guard fields.count <= 64 else { throw DictionaryImportError.tooManyColumns }
+                try consume(fields.map(String.init), false)
+                start = end == text.endIndex ? end : text.index(after: end)
+            }
+            return
+        }
         var fields: [String] = []
         var field = ""
         var quoted = false

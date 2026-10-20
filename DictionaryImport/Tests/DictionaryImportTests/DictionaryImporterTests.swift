@@ -31,7 +31,7 @@ final class DictionaryImporterTests: XCTestCase {
     }
 
     func testInvalidRowsDoNotHideValidCandidatesOrInjectDictionaryColumns() throws {
-        let result = try parse("あ\t亜\n\t欠落\n一列\nか\t\"タブ\t混入\"\nき\t\"改\n行\"\nく\t句\n")
+        let result = try parse("あ,亜\n,欠落\n一列\nか,\"タブ\t混入\"\nき,\"改\n行\"\nく,句\n")
         XCTAssertEqual(result.entries.map(\.word), ["亜", "句"])
         XCTAssertEqual(result.errorCount, 4)
         XCTAssertEqual(result.issues.count, 4)
@@ -124,5 +124,11 @@ final class DictionaryImporterTests: XCTestCase {
         XCTAssertEqual(result.errorCount, 1)
         XCTAssertEqual(result.duplicateCount, 1)
         XCTAssertEqual(result.entries.map(\.word), ["別の読み"])
+    }
+
+    func testTSVPreservesLiteralQuotesFromMozcAndIME() throws {
+        let result = try parse("くおーと\t\"引用\"\t名詞\nとちゅう\tBob\"s\t名詞\nひらく\t\"開始\t名詞\n")
+        XCTAssertEqual(result.entries.map(\.word), ["\"引用\"", "Bob\"s", "\"開始"])
+        XCTAssertEqual(result.errorCount, 0)
     }
 }
