@@ -2,8 +2,14 @@ name: azooKey Dev unsigned IPA
 
 on:
   workflow_dispatch:
+    inputs:
+      build_baseline:
+        description: 'Also build the importer-free Phase A baseline'
+        type: boolean
+        default: false
   push:
     branches: [feature/dev-dictionary-import]
+    paths-ignore: ['**/*.md']
 
 permissions:
   contents: read
@@ -29,7 +35,7 @@ jobs:
         with:
           name: parser-tests-${{ github.sha }}
           path: parser-tests.log
-          retention-days: 14
+          retention-days: 1
   build:
     if: github.repository == 'H4M4CHi-ttr/azooKey'
     runs-on: macos-15-intel
@@ -52,6 +58,7 @@ jobs:
           python3 scripts/verify_dev_build.py
           python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Checkout Phase A baseline without the importer
+        if: inputs.build_baseline
         uses: actions/checkout@v6
         with:
           ref: d4d59619b2abcc4ffaa5072d36fb922367efbc50
@@ -60,6 +67,7 @@ jobs:
           lfs: true
           persist-credentials: false
       - name: Build and package Phase A baseline
+        if: inputs.build_baseline
         run: |
           set -euo pipefail
           xcodebuild build -project .baseline/azooKey.xcodeproj -scheme MainApp \
@@ -75,13 +83,14 @@ jobs:
           python3 scripts/verify_dev_build.py --ipa build/azooKey-Dev-baseline-unsigned.ipa
           shasum -a 256 build/azooKey-Dev-baseline-unsigned.ipa > build/azooKey-Dev-baseline-unsigned.ipa.sha256
       - name: Upload Phase A baseline
+        if: inputs.build_baseline
         uses: actions/upload-artifact@v4
         with:
           name: azooKey-Dev-baseline-d4d59619
           path: |
             build/azooKey-Dev-baseline-unsigned.ipa
             build/azooKey-Dev-baseline-unsigned.ipa.sha256
-          retention-days: 14
+          retention-days: 1
       - name: Test dictionary import package
         if: hashFiles('DictionaryImport/Package.swift') != ''
         run: swift test --package-path DictionaryImport --parallel
@@ -138,7 +147,7 @@ jobs:
             build/azooKey-Dev-resign.ipa
             build/azooKey-Dev-resign.ipa.sha256
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
       - name: Upload verification logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -149,4 +158,4 @@ jobs:
             ${{ runner.temp }}/dev-build.log
             ${{ runner.temp }}/baseline-build.log
             build/DevTests.xcresult
-          retention-days: 14
+          retention-days: 1

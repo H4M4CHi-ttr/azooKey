@@ -141,13 +141,22 @@ final class KeyboardViewController: UIInputViewController {
             label.text = "azooKey Dev: 共有領域を利用できません。開発版のフルアクセスと署名を確認してください。"
             label.numberOfLines = 0
             label.textAlignment = .center
-            label.translatesAutoresizingMaskIntoConstraints = false
-            view.addSubview(label)
+            label.font = .preferredFont(forTextStyle: .body)
+            label.adjustsFontForContentSizeCategory = true
+            let nextKeyboard = UIButton(type: .system)
+            nextKeyboard.setTitle("次のキーボード", for: .normal)
+            nextKeyboard.addAction(UIAction { [weak self] _ in self?.advanceToNextInputMode() }, for: .touchUpInside)
+            nextKeyboard.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+            let stack = UIStackView(arrangedSubviews: [label, nextKeyboard])
+            stack.axis = .vertical
+            stack.spacing = 12
+            stack.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(stack)
             NSLayoutConstraint.activate([
-                label.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-                label.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-                label.topAnchor.constraint(equalTo: view.topAnchor, constant: 16),
-                label.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -16)
+                stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+                stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+                stack.topAnchor.constraint(equalTo: view.topAnchor, constant: 16),
+                stack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -16)
             ])
             return
         }
