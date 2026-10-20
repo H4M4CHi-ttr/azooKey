@@ -17,7 +17,7 @@
 
 ここでいうad-hoc署名は、Appleの有料アカウント用「Ad Hoc配布」とは別です。AltStoreの署名ライブラリは実行ファイルの署名からentitlementsを読みます。完全未署名ではApp Groups要求が欠ける可能性があるため、両方を用意しています。[AltSignの実装](https://github.com/rileytestut/AltSign/blob/master/AltSign/Model/ALTApplication.mm)
 
-Phase Aはインポートを含まない固定commit `d4d59619`を使います。最初の比較ビルド後は、手動入力`build_baseline`を有効にした場合だけ再生成します。通常は機能追加版だけをビルドし、Markdownだけのpushでは専用Workflowを再実行しません。
+Phase Aはインポートを含まない固定commit `d4d59619`を使います。手動入力`build_baseline=true`ではPhase Aだけを生成します。AltStoreへは`azooKey-Dev-baseline-resign.ipa`を渡してください。Phase Aには共有テストのボタンがないため、[ベースラインの手動登録手順](DEV-BASELINE.md)で本体からキーボードへの共有を確かめます。通常は機能追加版だけをビルドし、Markdownだけのpushでは専用Workflowを再実行しません。
 
 WorkflowはIntel macOS 15 / Xcode 26.3で、Submodule取得、Swiftテスト、iPhone向けReleaseビルド、識別子・拡張・entitlementsの検査を行います。Apple ID、秘密鍵、Developer証明書をGitHubに登録しません。App Store Connect Workflowは起動しません。公開リポジトリの標準GitHub-hostedランナーを使用します。計算時間は無料ですが、Artifactsにはアカウント全体の保存枠があります（GitHub Freeは500 MB、Packagesと共用）。無料枠内で使い、必要ならGitHubの支出上限を0に設定してください。繰り返しビルドした成果物は取得後に整理します。private化・大容量ランナーはこの無料構成の対象外です。[GitHubの料金説明](https://docs.github.com/en/billing/concepts/product-billing/github-actions)
 

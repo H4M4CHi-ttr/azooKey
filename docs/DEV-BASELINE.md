@@ -12,7 +12,15 @@
 
 `Config/Dev.xcconfig`をDebug/Release共通で読み込みます。正規版のApp Groupへのフォールバックやデータ移行は行いません。AltStoreが付加するチームIDは、開発版のグループに限って実行時に解決します。
 
-GitHub Actionsの **azooKey Dev unsigned IPA** を専用ブランチで手動実行します。macOS 15 / Xcode 26.3で、既存Swiftテスト、Releaseビルド、IPA内の本体・Keyboard.appexと識別子を検査します。App Store Connectへの送信処理やAppleの秘密情報は使いません。初回の手動実行は未登録のため404になりました。ユーザーの明示許可を得た専用ブランチへのpushで登録した後、Workflow ID `390655469`を指定した手動実行に成功しました。mainは変更していません。Phase Aの再生成には手動入力`build_baseline=true`を指定します。
+GitHub Actionsの **azooKey Dev unsigned IPA** を専用ブランチで手動実行します。macOS 15 / Xcode 26.3で、Releaseビルド、IPA内の本体・Keyboard.appexと識別子・署名メタデータを検査します。App Store Connectへの送信処理やAppleの秘密情報は使いません。初回の手動実行は未登録のため404になりました。ユーザーの明示許可を得た専用ブランチへのpushで登録した後、Workflow ID `390655469`を指定した手動実行に成功しました。mainは変更していません。Phase Aの再生成には手動入力`build_baseline=true`を指定します。この場合は固定版のPhase Aのみを生成し、Phase Bのインポート・既存変換回帰テストは実行しません。Phase Bの検証結果は`DEV-VALIDATION.md`で別に記録しています。
+
+## AltStoreへ渡すファイル
+
+`azooKey-Dev-baseline-resign.ipa`を使います。未署名ベースラインと同じソースから、Apple証明書を使わないad-hoc署名で開発版App Groupsの要求を本体・拡張の両方へ付けたコピーです。AltStore Classicがこの要求を読み、無料Apple Account用のプロファイルで両方を再署名します。コピーの作成だけではiPhoneへインストールできません。
+
+以前保存した`azooKey-Dev-baseline-unsigned.ipa`だけでは、再署名ツールがApp Groups要求を読み取れない可能性があります。共有を確認する導入には再署名用コピーを使ってください。アプリのソースは`d4d59619`から変更していません。
+
+Phase Aには「ファイルからインポート」と「共有テストを開始」ボタンはありません。共有は下記の手動登録語で確認します。
 
 ## 実機で確認する操作（すべて未検証）
 

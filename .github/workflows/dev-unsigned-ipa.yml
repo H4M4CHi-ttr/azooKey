@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       build_baseline:
-        description: 'Also build the importer-free Phase A baseline'
+        description: 'Build only the importer-free Phase A baseline'
         type: boolean
         default: false
   push:
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   parser:
-    if: github.repository == 'H4M4CHi-ttr/azooKey'
+    if: github.repository == 'H4M4CHi-ttr/azooKey' && !inputs.build_baseline
     runs-on: ubuntu-latest
     container: swift:6.2
     timeout-minutes: 10
@@ -54,6 +54,7 @@ jobs:
         with:
           xcode-version: '26.3'
       - name: Restore build cache
+        if: '!inputs.build_baseline'
         id: build-cache
         uses: actions/cache/restore@v5
         with:
@@ -93,6 +94,10 @@ jobs:
           (cd build/baseline-ipa && /usr/bin/zip -q -r -y ../azooKey-Dev-baseline-unsigned.ipa Payload)
           python3 scripts/verify_dev_build.py --ipa build/azooKey-Dev-baseline-unsigned.ipa
           shasum -a 256 build/azooKey-Dev-baseline-unsigned.ipa > build/azooKey-Dev-baseline-unsigned.ipa.sha256
+          python3 scripts/prepare_resign_ipa.py build/baseline-ipa/Payload/azooKey.app
+          (cd build/baseline-ipa && /usr/bin/zip -q -r -y ../azooKey-Dev-baseline-resign.ipa Payload)
+          python3 scripts/verify_dev_build.py --ipa build/azooKey-Dev-baseline-resign.ipa --allow-adhoc
+          shasum -a 256 build/azooKey-Dev-baseline-resign.ipa > build/azooKey-Dev-baseline-resign.ipa.sha256
       - name: Upload Phase A baseline
         if: inputs.build_baseline
         uses: actions/upload-artifact@v4
@@ -101,11 +106,14 @@ jobs:
           path: |
             build/azooKey-Dev-baseline-unsigned.ipa
             build/azooKey-Dev-baseline-unsigned.ipa.sha256
+            build/azooKey-Dev-baseline-resign.ipa
+            build/azooKey-Dev-baseline-resign.ipa.sha256
           retention-days: 1
       - name: Test dictionary import package
-        if: hashFiles('DictionaryImport/Package.swift') != ''
+        if: '!inputs.build_baseline'
         run: swift test --package-path DictionaryImport --parallel
       - name: Select an available iPhone simulator
+        if: '!inputs.build_baseline'
         run: |
           xcrun simctl list devices available -j > "$RUNNER_TEMP/simulators.json"
           python3 - <<'PY'
@@ -118,6 +126,7 @@ jobs:
               env.write('SIMULATOR_ID=' + candidates[0]['udid'] + '\n')
           PY
       - name: Dictionary import integration regressions
+        if: '!inputs.build_baseline'
         id: import-tests
         run: |
           set -o pipefail
@@ -129,6 +138,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM= \
             | tee "$RUNNER_TEMP/dev-tests.log"
       - name: Build unsigned iPhone Release
+        if: '!inputs.build_baseline'
         run: |
           set -o pipefail
           xcodebuild build -project azooKey.xcodeproj -scheme MainApp \
@@ -137,6 +147,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= DEVELOPMENT_TEAM= \
             | tee "$RUNNER_TEMP/dev-build.log"
       - name: Package and verify unsigned IPA
+        if: '!inputs.build_baseline'
         run: |
           set -euo pipefail
           mkdir -p build/ipa/Payload
@@ -152,6 +163,7 @@ jobs:
           python3 scripts/verify_dev_build.py --ipa build/azooKey-Dev-resign.ipa --allow-adhoc
           shasum -a 256 build/azooKey-Dev-resign.ipa > build/azooKey-Dev-resign.ipa.sha256
       - name: Upload unsigned IPA
+        if: '!inputs.build_baseline'
         uses: actions/upload-artifact@v4
         with:
           name: azooKey-Dev-unsigned-${{ github.sha }}
@@ -163,6 +175,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
       - name: Existing converter and keyboard regressions
+        if: '!inputs.build_baseline'
         id: legacy-tests
         run: |
           set -o pipefail
@@ -174,7 +187,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM= \
             | tee "$RUNNER_TEMP/legacy-tests.log"
       - name: Record separate test outcomes
-        if: always()
+        if: always() && !inputs.build_baseline
         run: |
           printf 'Import integration tests: %s\n\nExisting regressions: %s\n' \
             '${{ steps.import-tests.outcome }}' '${{ steps.legacy-tests.outcome }}' >> "$GITHUB_STEP_SUMMARY"
@@ -193,7 +206,7 @@ jobs:
             build/LegacyTests.xcresult
           retention-days: 1
       - name: Save build cache
-        if: always() && steps.build-cache.outputs.cache-hit != 'true'
+        if: always() && !inputs.build_baseline && steps.build-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
         with:
           path: |
