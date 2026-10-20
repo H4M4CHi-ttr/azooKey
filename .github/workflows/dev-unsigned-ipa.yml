@@ -8,15 +8,35 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: dev-unsigned-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
+  parser:
+    if: github.repository == 'H4M4CHi-ttr/azooKey'
+    runs-on: ubuntu-latest
+    container: swift:6.2
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Portable Swift parser tests
+        shell: bash
+        run: |
+          set -o pipefail
+          swift --version
+          swift test --package-path DictionaryImport --parallel | tee parser-tests.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parser-tests-${{ github.sha }}
+          path: parser-tests.log
+          retention-days: 14
   build:
     if: github.repository == 'H4M4CHi-ttr/azooKey'
     runs-on: macos-15
     timeout-minutes: 60
+    concurrency:
+      group: dev-unsigned-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v6
         with:
