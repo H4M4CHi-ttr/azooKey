@@ -111,7 +111,7 @@ public enum DictionaryImporter {
         }
 
         if fileExtension.lowercased() == "plist" || data.starts(with: Data("bplist".utf8)) {
-            guard let value = try? PropertyListSerialization.propertyList(from: data, options: 0, format: nil),
+            guard let value = try? PropertyListSerialization.propertyList(from: data, options: .init(), format: nil),
                   let rows = value as? [Any] else { throw DictionaryImportError.invalidPlist }
             guard rows.count <= maximumRecords else { throw DictionaryImportError.tooManyRecords }
             preview.encoding = "plist"
