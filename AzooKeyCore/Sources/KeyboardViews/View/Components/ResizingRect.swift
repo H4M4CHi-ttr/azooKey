@@ -329,9 +329,9 @@ struct ResizingBindingFrame<Extension: ApplicationSpecificKeyboardViewExtension>
         self._bottomOffset = bottomOffset
     }
 
-    private var isAtDefaultWidth: Bool {
-        // 浮動小数点数の計算誤差を考慮し、0.1ポイント未満の差は「同じ」と見なします
-        self.size.width.isApproximatelyEqual(to: self.initialSize.width, absoluteTolerance: 0.1)
+    var isAtDefaultWidth: Bool {
+        // 浮動小数点数の計算誤差を考慮し、0.1ポイント以内の差は「同じ」と見なします
+        abs(self.size.width - self.initialSize.width) <= 0.1
     }
 
     @ViewBuilder
