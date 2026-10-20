@@ -71,6 +71,9 @@ public enum DictionaryImportError: Error, LocalizedError, Sendable {
 public enum DictionaryImporter {
     public static let maximumBytes = 16 * 1024 * 1024
     public static let maximumRecords = 100_000
+    public static let maximumEntriesPerReading = Int(UInt16.max)
+    public static let maximumReadingScalars = 256
+    public static let maximumWordBytes = 16 * 1024
 
     public static func additions(_ candidates: [ImportEntry], to existing: [ImportEntry]) -> [ImportEntry] {
         var seen = Set(existing.map(\.key))
@@ -86,6 +89,9 @@ public enum DictionaryImporter {
         guard data.count <= maximumBytes else { throw DictionaryImportError.tooLarge }
         var preview = ImportPreview()
         var seen = Set(existing.map(\.key))
+        var readingCounts = existing.reduce(into: [String: Int]()) { counts, entry in
+            counts[entry.ruby, default: 0] += 1
+        }
         var records = 0
 
         func issue(_ message: String, warning: Bool = false) {
@@ -99,6 +105,11 @@ public enum DictionaryImporter {
             let ruby = ImportEntry.normalizedReading(ruby.trimmingCharacters(in: .whitespaces))
             guard !ruby.isEmpty, !word.trimmingCharacters(in: .whitespaces).isEmpty else {
                 issue("読みまたは単語が空です")
+                return
+            }
+            guard ruby.unicodeScalars.prefix(maximumReadingScalars + 1).count <= maximumReadingScalars,
+                  word.utf8.prefix(maximumWordBytes + 1).count <= maximumWordBytes else {
+                issue("読みは256文字、単語はUTF-8で16 KiB以下にしてください")
                 return
             }
             // The existing dictionary generator uses TSV internally.
@@ -119,7 +130,15 @@ public enum DictionaryImporter {
             let (partOfSpeech, warning) = Self.partOfSpeech(pos, ruby: ruby, word: word)
             if warning { issue("品詞「\(pos.prefix(60))」は通常の単語として登録します（活用なし）", warning: true) }
             let entry = ImportEntry(ruby: ruby, word: word, partOfSpeech: partOfSpeech)
-            if seen.insert(entry.key).inserted { preview.entries.append(entry) } else { preview.duplicateCount += 1 }
+            if seen.contains(entry.key) {
+                preview.duplicateCount += 1
+            } else if readingCounts[entry.ruby, default: 0] >= maximumEntriesPerReading {
+                issue("同じ読みの候補が65,535件を超えるため追加できません")
+            } else {
+                seen.insert(entry.key)
+                readingCounts[entry.ruby, default: 0] += 1
+                preview.entries.append(entry)
+            }
         }
 
         if fileExtension.lowercased() == "plist" || data.starts(with: Data("bplist".utf8)) {

@@ -60,6 +60,19 @@ final class UserDictionaryImportTests: XCTestCase {
         XCTAssertEqual(UserDefaults.standard.data(forKey: "user_dict"), before)
     }
 
+    func testGenerationRejectsCandidateCountOverflowBeforePublishing() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let entries = (0...Int(UInt16.max)).map { index in
+            UserDictionaryData(ruby: "あ", word: "語\(index)", isVerb: false, isPersonName: false, isPlaceName: false, id: index)
+        }
+        let dictionary = UserDictionary(items: entries)
+        let builder = UserDictionaryUpdater(additionalSystemDictionaries: [], denylist: [])
+        XCTAssertThrowsError(try builder.generate(userDictionary: dictionary, directoryURL: directory))
+        XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: directory.path).isEmpty)
+    }
+
     func testGeneratedFilesRollbackAfterPublishFailure() throws {
         let manager = FailingMoveFileManager()
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)

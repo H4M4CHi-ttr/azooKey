@@ -19,7 +19,7 @@ extension UserDictionary {
 }
 
 enum UserDictionaryImportCommitError: Error, LocalizedError {
-    case sharedContainerUnavailable, unreadableDictionary, dictionaryChanged, encoding
+    case sharedContainerUnavailable, unreadableDictionary, dictionaryChanged, encoding, tooManyCandidates
 
     var errorDescription: String? {
         switch self {
@@ -27,6 +27,7 @@ enum UserDictionaryImportCommitError: Error, LocalizedError {
         case .unreadableDictionary: "既存の辞書を読み込めません。元の保存データを保護するため取り込みを中止しました。"
         case .dictionaryChanged: "処理中に辞書が変更されました。元の内容を保護するため、ファイルを選び直してください。"
         case .encoding: "辞書の保存データを作成できませんでした。既存の辞書は変更していません。"
+        case .tooManyCandidates: "同じ読みの変換候補が65,535件を超えています。既存の辞書は変更していません。"
         }
     }
 }

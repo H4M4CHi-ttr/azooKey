@@ -111,4 +111,18 @@ final class DictionaryImporterTests: XCTestCase {
         XCTAssertEqual(ImportEntry.normalizedReading("ウ\u{3099}ァ"), "ゔぁ")
         XCTAssertEqual(ImportEntry.normalizedReading("ABC123"), "ABC123")
     }
+
+    func testExtremeFieldLengthsAreErrorsWithoutTruncation() throws {
+        let result = try parse(String(repeating: "あ", count: 257) + "\t語\nあ\t" + String(repeating: "漢", count: 5462) + "\nい\t正常\n")
+        XCTAssertEqual(result.errorCount, 2)
+        XCTAssertEqual(result.entries.map(\.word), ["正常"])
+    }
+
+    func testExistingCandidatesCountTowardTheEngineLimit() throws {
+        let existing = (0..<DictionaryImporter.maximumEntriesPerReading).map { ImportEntry(ruby: "あ", word: "語\($0)") }
+        let result = try DictionaryImporter.parse(Data("ア\t追加\nあ\t語0\nい\t別の読み\n".utf8), existing: existing)
+        XCTAssertEqual(result.errorCount, 1)
+        XCTAssertEqual(result.duplicateCount, 1)
+        XCTAssertEqual(result.entries.map(\.word), ["別の読み"])
+    }
 }

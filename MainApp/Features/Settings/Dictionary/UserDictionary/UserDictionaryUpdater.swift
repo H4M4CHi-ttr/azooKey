@@ -192,6 +192,16 @@ struct UserDictionaryUpdater {
         }
 
         // 書き出し先と設定
+        // DictionaryBuilder stores each reading's candidate count in UInt16.
+        for dictionaryEntries in [entries, shortcutEntries] {
+            var counts: [String: Int] = [:]
+            for entry in dictionaryEntries {
+                counts[entry.ruby, default: 0] += 1
+                guard counts[entry.ruby, default: 0] <= Int(UInt16.max) else {
+                    throw UserDictionaryImportCommitError.tooManyCandidates
+                }
+            }
+        }
         // charID を利用（既存のマッピングを維持）
         let cmap = self.char2UInt8
 
