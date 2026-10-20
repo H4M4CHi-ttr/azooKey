@@ -83,6 +83,34 @@ final class AdditionalDictManager: ObservableObject {
     }
 
     @MainActor func userDictUpdate() {
+        let config = dictionaryConfiguration()
+        UserDictionaryUpdater(additionalSystemDictionaries: config.types, denylist: config.denylist).process()
+    }
+
+    @MainActor func userDictUpdate(importing dictionary: UserDictionary, expectedSavedData: Data?) async throws {
+        guard let directoryURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: SharedStore.appGroupKey) else {
+            throw UserDictionaryImportCommitError.sharedContainerUnavailable
+        }
+        // Validate encoding before any dictionary file is changed.
+        _ = try JSONEncoder().encode(dictionary)
+        let config = dictionaryConfiguration()
+        let staging = directoryURL.appendingPathComponent(".dictionary-import-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: staging) }
+        try await Task.detached(priority: .userInitiated) {
+            let builder = UserDictionaryUpdater(additionalSystemDictionaries: config.types, denylist: config.denylist)
+            try builder.generate(userDictionary: dictionary, directoryURL: staging)
+        }.value
+        guard UserDefaults.standard.data(forKey: "user_dict") == expectedSavedData else {
+            throw UserDictionaryImportCommitError.dictionaryChanged
+        }
+        try DictionaryGeneratedFiles.publish(from: staging, to: directoryURL)
+        guard dictionary.save() else { throw UserDictionaryImportCommitError.encoding }
+        var manager = MessageManager()
+        manager.done(.ver1_9_user_dictionary_update)
+    }
+
+    @MainActor private func dictionaryConfiguration() -> (types: [AdditionalSystemDictionarySetting.SystemDictionaryType], denylist: Set<String>) {
         var additionalSystemDictionaries: [AdditionalSystemDictionarySetting.SystemDictionaryType] = []
         var blockTargets: [String] = []
 
@@ -111,11 +139,6 @@ final class AdditionalDictManager: ObservableObject {
             UserDefaults.standard.setValue(additionalSystemDictionaries.map(\.rawValue), forKey: "additional_dict")
             UserDefaults.standard.setValue(blocklist, forKey: "additional_dict_blocks")
         }
-        let builder = UserDictionaryUpdater(
-            additionalSystemDictionaries: additionalSystemDictionaries,
-            denylist: Set(blockTargets)
-        )
-        builder.process()
         // MARK: v2.3→v2.4のMigration処理
         // 元々コンテナApp内部でのみ管理していた絵文字関連の設定情報をキーボード拡張との共有情報にするための処理
         if !AdditionalSystemDictionarySettingKey.available {
@@ -125,6 +148,7 @@ final class AdditionalDictManager: ObservableObject {
                 .kaomoji: .init(enabled: self.systemDict[.kaomoji]),
             ])
         }
+        return (additionalSystemDictionaries, Set(blockTargets))
     }
 }
 

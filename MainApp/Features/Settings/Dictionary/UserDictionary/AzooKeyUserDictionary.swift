@@ -8,6 +8,7 @@
 
 import AzooKeyUtils
 import Foundation
+import DictionaryImport
 import struct KanaKanjiConverterModule.Candidate
 import struct KanaKanjiConverterModule.DateTemplateLiteral
 import struct KanaKanjiConverterModule.TemplateData
@@ -35,6 +36,21 @@ private final class UserDictManagerVariables: ObservableObject {
         }
     }
 
+    @MainActor func importEntries(_ entries: [ImportEntry]) async throws -> Int {
+        let savedData = UserDefaults.standard.data(forKey: "user_dict")
+        let saved = UserDictionary.get()
+        if UserDefaults.standard.object(forKey: "user_dict") != nil, saved == nil {
+            throw UserDictionaryImportCommitError.unreadableDictionary
+        }
+        let current = saved ?? UserDictionary(items: items)
+        let updated = current.adding(entries)
+        let count = updated.items.count - current.items.count
+        guard count > 0 else { return 0 }
+        try await AdditionalDictManager().userDictUpdate(importing: updated, expectedSavedData: savedData)
+        items = updated.items
+        return count
+    }
+
     @MainActor func save() {
         TemplateData.save(templates)
 
@@ -46,7 +62,7 @@ private final class UserDictManagerVariables: ObservableObject {
 }
 
 struct AzooKeyUserDictionaryView: View {
-    @ObservedObject private var variables: UserDictManagerVariables = UserDictManagerVariables()
+    @StateObject private var variables: UserDictManagerVariables = UserDictManagerVariables()
     @EnvironmentObject private var reviewPrompt: RequestReviewManager
 
     var body: some View {
@@ -73,6 +89,14 @@ private struct UserDictionaryDataListView: View {
             Section {
                 Text("変換候補に単語を追加することができます。iOSの標準のユーザ辞書とは異なります。")
             }
+            Section {
+                NavigationLink {
+                    UserDictionaryImportView(existing: variables.items, commit: variables.importEntries)
+                } label: {
+                    Label("ファイルからインポート", systemImage: "square.and.arrow.down")
+                }
+            }
+            DevDictionarySharingView()
             let currentGroupedItems: [String: [UserDictionaryData]] = Dictionary(grouping: variables.items, by: {$0.ruby.first.map {String($0)} ?? exceptionKey}).mapValues {$0.sorted {$0.id < $1.id}}
             let keys = currentGroupedItems.keys
             let currentKeys: [String] = keys.contains(exceptionKey) ? [exceptionKey] + keys.filter {$0 != exceptionKey}.sorted() : keys.sorted()

@@ -34,7 +34,7 @@ struct UserDictionaryUpdater {
         self.denylist = denylist
     }
 
-    func loadUserDictInfo() -> (paths: [String], useradds: [UserDictionaryData], hotfixDictionary: [HotfixDictionaryV1.Entry]) {
+    func loadUserDictInfo(userDictionary: UserDictionary? = nil) -> (paths: [String], useradds: [UserDictionaryData], hotfixDictionary: [HotfixDictionaryV1.Entry]) {
 
         // データファイル名
         let paths: [String] = self.additionalSystemDictionaries.flatMap {
@@ -54,7 +54,7 @@ struct UserDictionaryUpdater {
         }
 
         let useradds: [UserDictionaryData]
-        if let dictionary = UserDictionary.get() {
+        if let dictionary = userDictionary ?? UserDictionary.get() {
             useradds = dictionary.items
         } else {
             useradds = []
@@ -122,7 +122,21 @@ struct UserDictionaryUpdater {
     }
 
     @MainActor func process() {
-        var (paths, useradds, hotfix) = self.loadUserDictInfo()
+        do {
+            guard let directoryURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: SharedStore.appGroupKey) else {
+                throw UserDictionaryImportCommitError.sharedContainerUnavailable
+            }
+            try generate(userDictionary: nil, directoryURL: directoryURL)
+            var manager = MessageManager()
+            manager.done(.ver1_9_user_dictionary_update)
+        } catch {
+            debug(#function, "failed to export dictionary:", error)
+        }
+    }
+
+    func generate(userDictionary: UserDictionary?, directoryURL: URL) throws {
+        guard !char2UInt8.isEmpty else { throw CocoaError(.fileReadCorruptFile) }
+        var (paths, useradds, hotfix) = self.loadUserDictInfo(userDictionary: userDictionary)
         // 重複削除（ユーザ辞書とホットフィックスの重複を取り除く）
         hotfix = hotfix.filter { hotfixEntry in
             !useradds.contains {
@@ -174,12 +188,10 @@ struct UserDictionaryUpdater {
                 }
             }
         } catch {
-            debug("ファイルが存在しません: \(error)")
-            return
+            throw error
         }
 
         // 書き出し先と設定
-        let directoryURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: SharedStore.appGroupKey)!
         // charID を利用（既存のマッピングを維持）
         let cmap = self.char2UInt8
 
@@ -200,10 +212,8 @@ struct UserDictionaryUpdater {
             )
             debug(#function, "successfully exported dictionary", directoryURL)
 
-            var manager = MessageManager()
-            manager.done(.ver1_9_user_dictionary_update)
         } catch {
-            debug(#function, "failed to export dictionary:", error)
+            throw error
         }
     }
 

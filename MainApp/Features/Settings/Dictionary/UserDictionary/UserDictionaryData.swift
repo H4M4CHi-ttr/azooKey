@@ -96,7 +96,7 @@ final class EditableUserDictionaryData: ObservableObject {
     }
 }
 
-struct UserDictionary: Codable {
+struct UserDictionary: Codable, Sendable {
     let items: [UserDictionaryData]
 
     init(items: [UserDictionaryData]) {
@@ -116,15 +116,11 @@ struct UserDictionary: Codable {
         }
     }
 
-    func save() {
-        let encoder = JSONEncoder()
-        let saveData: Data
-        if let encodedValue = try? encoder.encode(self) {
-            saveData = encodedValue
-        } else {
-            saveData = Data()
-        }
+    @discardableResult
+    func save() -> Bool {
+        guard let saveData = try? JSONEncoder().encode(self) else { return false }
         UserDefaults.standard.set(saveData, forKey: "user_dict")
+        return true
     }
     static func get() -> Self? {
         if let value = UserDefaults.standard.value(forKey: "user_dict") as? Data {
@@ -137,7 +133,7 @@ struct UserDictionary: Codable {
     }
 }
 
-struct UserDictionaryData: Equatable, Identifiable, Codable {
+struct UserDictionaryData: Equatable, Identifiable, Codable, Sendable {
     var ruby: String
     var word: String
     var isVerb: Bool
