@@ -1,6 +1,7 @@
 import DictionaryImport
 import Foundation
 import KeyboardExtensionUtils
+import KanaKanjiConverterModuleWithDefaultDictionary
 import XCTest
 @testable import azooKey
 
@@ -57,6 +58,22 @@ final class UserDictionaryImportTests: XCTestCase {
         let names = try FileManager.default.contentsOfDirectory(atPath: directory.path)
         XCTAssertTrue(names.contains { $0.hasPrefix("user.") })
         XCTAssertTrue(names.contains { $0.hasPrefix("user_shortcuts.") })
+        let converter = KanaKanjiConverter.withDefaultDictionary()
+        var input = ComposingText()
+        input.insertAtCursorPosition("あずーきー", inputStyle: .direct)
+        let options = ConvertRequestOptions(
+            N_best: 20,
+            requireJapanesePrediction: .autoMix, requireEnglishPrediction: .disabled,
+            keyboardLanguage: .ja_JP,
+            englishCandidateInRoman2KanaInput: true,
+            fullWidthRomanCandidate: false, halfWidthKanaCandidate: false,
+            learningType: .nothing, maxMemoryCount: 0, shouldResetMemory: false,
+            memoryDirectoryURL: directory, sharedContainerURL: directory,
+            textReplacer: .empty, specialCandidateProviders: nil,
+            metadata: .init(appVersionString: "ImportTests")
+        )
+        let candidates = converter.requestCandidates(input, options: options)
+        XCTAssertTrue(candidates.mainResults.contains { $0.text == "開発テスト" }, "Generated user dictionary must be read by the converter")
         XCTAssertEqual(UserDefaults.standard.data(forKey: "user_dict"), before)
     }
 
