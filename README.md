@@ -10,7 +10,7 @@
 
 ### Windowsから実機へ入れる
 
-1. [Actions](https://github.com/H4M4CHi-ttr/azooKey/actions)から、成功した **azooKey Dev unsigned IPA** のArtifactsを取得します。
+1. [Actions](https://github.com/H4M4CHi-ttr/azooKey/actions)から、**azooKey Dev unsigned IPA** の新機能テスト・Releaseビルド・IPA検査が成功した実行からArtifactsを取得します。既存の変換精度テストの結果は別記します。
 2. ZIP内の`azooKey-Dev-resign.ipa`をAltStore ClassicまたはSideloadlyで、無料Apple Accountを使って再署名します。**Keyboard.appexを残して、本体と拡張の両方を署名**してください。完全未署名の`azooKey-Dev-unsigned.ipa`も同梱しますが、直接インストールはできません。再署名用IPAはApp Groups要求を残すため、Apple証明書なしのad-hoc署名を付けています。
 3. 開発版だけをiOSのキーボードへ追加し、必要なフルアクセスも開発版だけに許可します。ユーザ辞書画面の共有テストと、手動登録語・インポート語の候補反映を順に確認します。
 

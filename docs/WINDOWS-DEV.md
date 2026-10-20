@@ -7,12 +7,12 @@
 ## IPAを取得する
 
 1. フォークの[Actions](https://github.com/H4M4CHi-ttr/azooKey/actions)を開き、`feature/dev-dictionary-import`の **azooKey Dev unsigned IPA** を選びます。
-2. 全ステップが成功した実行のArtifactsを保存期間の1日以内にダウンロードし、ZIPを展開します。初回はWorkflow未登録で手動実行が404になりました。ユーザーの許可を得た専用ブランチへのpushで登録した後、ID指定の手動実行に成功しました。mainは変更していません。手動での実行は `gh workflow run 390655469 --ref feature/dev-dictionary-import -f build_baseline=false` で行えます。
+2. 新機能の回帰テスト、Releaseビルド、IPA検査が成功した実行のArtifactsを、保存期間の1日以内にダウンロードして展開します。既存の変換精度テストは後段で別に実行し、失敗した場合はWorkflow全体も失敗表示のまま残します。検証対象ごとの結果は`DEV-VALIDATION.md`を確認してください。初回はWorkflow未登録で手動実行が404になりました。ユーザーの許可を得た専用ブランチへのpushで登録した後、ID指定の手動実行に成功しました。mainは変更していません。手動での実行は `gh workflow run 390655469 --ref feature/dev-dictionary-import -f build_baseline=false` で行えます。
 3. Windows PowerShellで`Get-FileHash .\azooKey-Dev-resign.ipa -Algorithm SHA256`を実行し、同梱の`.sha256`と一致することを確認します。
 
 | ファイル | 署名状態と用途 |
 | --- | --- |
-| `azooKey-Dev-unsigned.ipa` | 完全未署名。Appleの証明書・プロファイルなし。パッケージ検査用。そのままではインストールできません。 |
+| `azooKey-Dev-unsigned.ipa` | 未署名の配布パッケージ。Apple Developer証明書・プロファイルなし。パッケージ検査用。そのままではインストールできません。 |
 | `azooKey-Dev-resign.ipa` | Appleの証明書を使わない`codesign --sign -`のad-hoc署名でApp Groups要求を保持。**Windowsからは原則こちらを使用**し、無料アカウントで再署名します。これも単独ではインストールできません。 |
 
 ここでいうad-hoc署名は、Appleの有料アカウント用「Ad Hoc配布」とは別です。AltStoreの署名ライブラリは実行ファイルの署名からentitlementsを読みます。完全未署名ではApp Groups要求が欠ける可能性があるため、両方を用意しています。[AltSignの実装](https://github.com/rileytestut/AltSign/blob/master/AltSign/Model/ALTApplication.mm)
@@ -95,7 +95,7 @@ AltStoreの公開実装は、App Groupに`.TEAMID`を付けて登録し、両バ
 | 本体に共有領域エラー | 完全未署名版でなく再署名用IPAか、署名時にApp Groupsを登録したかを確認。 |
 | 拡張だけ共有領域エラー | 開発版のフルアクセス、拡張側プロファイルのグループ、本体と一致するチーム・グループを確認。 |
 | 共有テストが応答なし | 実際に開発版を選んだか確認。両側のApp Groupsが一致しない、または署名ツールがentitlementsを落とした可能性を調べる。 |
-| 共有テストは通るが候補が出ない | 開発版へ手動登録して再確認。辞書生成エラー、読みの正規化、変換用ファイル、キーボードの再読込を分けて調べる。 |
+| 共有テストは通るが候補が出ない | 開発版へ手動登録して再確認。辞書生成エラー、読みの正規化、変換用ファイル、キーボードの再読込を分けて調べる。既存コードではキーボードを閉じる際に`forceReload: true`で辞書キャッシュを更新する。 |
 | 再署名後に開発版データが見えない | 署名アカウント・本体ID・グループ名が前回と同じか確認。正規版の保存先へ切り替えない。 |
 
 署名済みIPAをWindowsへ書き出せるツールではZIPとして展開し、本体とKeyboard.appexのInfo.plist・embedded.mobileprovisionを**端末内で**比較します。プロファイルには個人情報があるため、原本をチャットや公開Issueへ貼らないでください。Macを後から利用できる場合は`codesign -d --entitlements - <app/appex>`と`security cms -D -i <embedded.mobileprovision>`で最終的な署名と許可を照合できます。
