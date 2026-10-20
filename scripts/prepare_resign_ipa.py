@@ -30,7 +30,7 @@ def seal(app):
         for bundle in (extension, app):
             run("codesign", "--force", "--sign", "-", "--entitlements", str(entitlements), str(bundle))
             actual = subprocess.check_output(
-                ["codesign", "--display", "--entitlements", "-", str(bundle)], stderr=subprocess.DEVNULL
+                ["codesign", "--display", "--entitlements", ":-", str(bundle)], stderr=subprocess.DEVNULL
             )
             assert plistlib.loads(actual) == expected, "Entitlements were not preserved"
         run("codesign", "--verify", "--deep", "--strict", str(app))
