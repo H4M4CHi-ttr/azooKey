@@ -39,9 +39,9 @@ public enum DevAppIdentity {
         guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
               let data = try? Data(contentsOf: url),
               let start = data.range(of: Data("<?xml".utf8)),
-              let end = data.range(of: Data("</plist>".utf8), in: start.lowerBound..<data.endIndex),
+              let end = data.range(of: Data("</plist>".utf8), options: [], in: start.lowerBound..<data.endIndex),
               let plist = try? PropertyListSerialization.propertyList(
-                from: data.subdata(in: start.lowerBound..<end.upperBound), format: nil
+                from: data.subdata(in: start.lowerBound..<end.upperBound), options: [], format: nil
               ) as? [String: Any],
               let entitlements = plist["Entitlements"] as? [String: Any] else {
             return []
