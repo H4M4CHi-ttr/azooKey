@@ -62,7 +62,7 @@ struct UserDictionaryImportView: View {
                 if !preview.issues.isEmpty {
                     Section("エラー・警告の詳細（先頭100件）") {
                         ForEach(Array(preview.issues.enumerated()), id: \.offset) { _, issue in
-                            Text("\(issue.record)行目: \(issue.message)")
+                            Text("データ\(issue.record)件目: \(issue.message)")
                         }
                     }
                 }

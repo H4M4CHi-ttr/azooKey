@@ -1,10 +1,18 @@
 import DictionaryImport
 import Foundation
+import KeyboardExtensionUtils
 import XCTest
 @testable import azooKey
 
 @MainActor
 final class UserDictionaryImportTests: XCTestCase {
+    func testGroupSelectionNeverAcceptsTheProductionGroup() {
+        XCTAssertFalse(DevAppIdentity.isDevelopmentGroup("group.com.azooKey.keyboard"))
+        XCTAssertFalse(DevAppIdentity.isDevelopmentGroup(DevAppIdentity.baseGroup + "other"))
+        XCTAssertTrue(DevAppIdentity.isDevelopmentGroup(DevAppIdentity.baseGroup))
+        XCTAssertTrue(DevAppIdentity.isDevelopmentGroup(DevAppIdentity.baseGroup + ".TESTTEAM01"))
+    }
+
     func testAdditionsKeepExistingFlagsTemplatesAndNeverShare() throws {
         let existing = UserDictionary(items: [
             UserDictionaryData(ruby: "ひづけ", word: "日時", isVerb: false, isPersonName: false, isPlaceName: false,

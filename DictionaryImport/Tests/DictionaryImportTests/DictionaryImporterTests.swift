@@ -96,5 +96,12 @@ final class DictionaryImporterTests: XCTestCase {
         XCTAssertThrowsError(try DictionaryImporter.parse(Data([0xEF, 0xBB, 0xBF, 0xFF])))
         let result = try parse("  !comment with unclosed \"\nあ\t亜\n")
         XCTAssertEqual(result.entries.map(\.word), ["亜"])
+        XCTAssertTrue(try parse(String(repeating: " ", count: 100_000)).entries.isEmpty)
+    }
+
+    func testImportedWordsDoNotActivateTemplateExpressions() throws {
+        let result = try parse("あ\t<random length=\"100000000\">\nい\t<date format=\"yyyy\">\nう\t<database>\n")
+        XCTAssertEqual(result.errorCount, 2)
+        XCTAssertEqual(result.entries.map(\.word), ["<database>"])
     }
 }

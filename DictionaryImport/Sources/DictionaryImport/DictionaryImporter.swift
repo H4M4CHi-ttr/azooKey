@@ -98,6 +98,10 @@ public enum DictionaryImporter {
                 issue("読みまたは単語にタブ・改行・制御文字が含まれています")
                 return
             }
+            if word.contains("<"), word.range(of: #"<(?:date|random)\b"#, options: .regularExpression) != nil {
+                issue("時刻・ランダム変換の書式は専用の編集画面で登録してください")
+                return
+            }
             if let allowedReadingCharacters,
                !(ruby.applyingTransform(.hiraganaToKatakana, reverse: false) ?? ruby)
                 .allSatisfy(allowedReadingCharacters.contains) {
@@ -222,6 +226,7 @@ public enum DictionaryImporter {
         var closedQuote = false
         var malformed = false
         var comment = false
+        var leadingWhitespace = true
         var iterator = text.makeIterator()
         var character = iterator.next()
         func emit() throws {
@@ -232,10 +237,12 @@ public enum DictionaryImporter {
             closedQuote = false
             malformed = false
             comment = false
+            leadingWhitespace = true
         }
         while let current = character {
             let next = iterator.next()
-            if fields.isEmpty, field.allSatisfy(\.isWhitespace), !quoted, current == "!" || current == "#" { comment = true }
+            if fields.isEmpty, leadingWhitespace, !quoted, current == "!" || current == "#" { comment = true }
+            if !current.isWhitespace { leadingWhitespace = false }
             if comment {
                 if current == "\n" { try emit() } else { field.append(current) }
             } else if quoted {

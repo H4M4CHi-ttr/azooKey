@@ -3,6 +3,7 @@ import argparse
 import json
 import plistlib
 import re
+import struct
 import zipfile
 from pathlib import Path
 
@@ -12,6 +13,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def verify_source():
+    config = (ROOT / "Config/Dev.xcconfig").read_text(encoding="utf-8")
+    assert f"AZOOKEY_APP_BUNDLE_ID = {APP}" in config
+    identity = (ROOT / "AzooKeyCore/Sources/KeyboardExtensionUtils/DevAppIdentity.swift").read_text(encoding="utf-8")
+    assert f'baseGroup = "{GROUP}"' in identity
+    icon = (ROOT / "MainApp/Assets.xcassets/AppIconDev.appiconset/DevIcon.png").read_bytes()
+    assert struct.unpack(">II", icon[16:24]) == (1024, 1024)
     project = (ROOT / "azooKey.xcodeproj/project.pbxproj").read_text(encoding="utf-8")
     assert "PRODUCT_BUNDLE_IDENTIFIER = DevEn3." not in project
     assert project.count("baseConfigurationReference = A159B2000000000000000001") == 2

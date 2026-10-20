@@ -28,7 +28,7 @@ public enum DevAppIdentity {
         let candidates = (profileGroups + altGroups + [baseGroup]).filter(isDevelopmentGroup)
         return candidates.first {
             FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: $0) != nil
-        } ?? baseGroup
+        } ?? candidates.first ?? baseGroup
     }()
 
     public static var sharedContainerURL: URL? {
