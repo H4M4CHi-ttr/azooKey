@@ -5,7 +5,11 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>azooKey</string>
+	<string>$(AZOOKEY_DISPLAY_NAME)</string>
+	<key>AzooKeyAppGroup</key>
+	<string>$(AZOOKEY_APP_GROUP)</string>
+	<key>AzooKeyKeyboardBundleIdentifier</key>
+	<string>$(AZOOKEY_KEYBOARD_BUNDLE_ID)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

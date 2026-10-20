@@ -11,6 +11,7 @@ import Combine
 import Contacts
 import KanaKanjiConverterModule
 import KeyboardViews
+import KeyboardExtensionUtils
 import SwiftUI
 import SwiftUtils
 import UIKit
@@ -134,6 +135,22 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     override func viewDidLoad() {
+        guard DevAppIdentity.sharedContainerURL != nil else {
+            super.viewDidLoad()
+            let label = UILabel()
+            label.text = "azooKey Dev: 共有領域を利用できません。開発版のフルアクセスと署名を確認してください。"
+            label.numberOfLines = 0
+            label.textAlignment = .center
+            label.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(label)
+            NSLayoutConstraint.activate([
+                label.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+                label.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+                label.topAnchor.constraint(equalTo: view.topAnchor, constant: 16),
+                label.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -16)
+            ])
+            return
+        }
         debug(#function, "loadedInstanceCount:", KeyboardViewController.loadedInstanceCount)
         super.viewDidLoad()
         SemiStaticStates.shared.setup()
@@ -258,6 +275,7 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        guard DevAppIdentity.sharedContainerURL != nil else { return }
         // サイズに関する情報はこのタイミングで設定する
         if #available(iOS 26, *) {
             let size = self.currentKeyboardViewSize()
@@ -272,10 +290,14 @@ final class KeyboardViewController: UIInputViewController {
         }
         // キーボードのセットアップはこの段階で行う
         self.setupKeyboardView()
+        if let probe = SharedStore.userDefaults.string(forKey: "devProbeFromApp") {
+            SharedStore.userDefaults.set(probe, forKey: "devProbeFromKeyboard")
+        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        guard DevAppIdentity.sharedContainerURL != nil else { return }
         self.updateStates()
 
         // Floating Keyboardなどの一部の処理に限り、このタイミングにならないとウィンドウ幅が不明なケースが存在する
@@ -306,6 +328,7 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        guard DevAppIdentity.sharedContainerURL != nil else { return }
         // iOS 26以上で、レイアウト確定後に向き・サイズを反映
         if #available(iOS 26, *) {
             let size = self.currentKeyboardViewSize()
@@ -412,6 +435,10 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     override func viewWillDisappear(_ animated: Bool) {
+        guard DevAppIdentity.sharedContainerURL != nil else {
+            super.viewWillDisappear(animated)
+            return
+        }
         debug("KeyboardViewController.viewWillDisappear: キーボードが閉じられます")
         KeyboardViewController.action.closeKeyboard()
         KeyboardViewController.variableStates.closeKeyboard()
@@ -421,6 +448,7 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewWillTransition(to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
+        guard DevAppIdentity.sharedContainerURL != nil else { return }
         if #available(iOS 26, *) {
             // 幅は即時反映しておき、向きは完了時のWindowSceneから決定する
             coordinator.animate(alongsideTransition: nil) { [weak self] _ in
@@ -506,6 +534,7 @@ final class KeyboardViewController: UIInputViewController {
     /// 引数の`textInput`は常に`nil`
     override func textWillChange(_ textInput: (any UITextInput)?) {
         super.textWillChange(textInput)
+        guard DevAppIdentity.sharedContainerURL != nil else { return }
 
         let left = self.textDocumentProxy.documentContextBeforeInput ?? ""
         let center = self.textDocumentProxy.selectedText ?? ""
@@ -518,6 +547,7 @@ final class KeyboardViewController: UIInputViewController {
     /// 引数の`textInput`は常に`nil`
     override func textDidChange(_ textInput: (any UITextInput)?) {
         super.textDidChange(textInput)
+        guard DevAppIdentity.sharedContainerURL != nil else { return }
 
         let left = self.textDocumentProxy.documentContextBeforeInput ?? ""
         let center = self.textDocumentProxy.selectedText ?? ""

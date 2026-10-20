@@ -8,12 +8,13 @@
 
 import Foundation
 import KeyboardViews
+import KeyboardExtensionUtils
 import SwiftUtils
 
 public enum SharedStore {
     @MainActor public static let userDefaults = UserDefaults(suiteName: Self.appGroupKey)!
-    public static let bundleName = "DevEn3.azooKey.keyboard"
-    public static let appGroupKey = "group.com.azooKey.keyboard"
+    public static var bundleName: String { DevAppIdentity.keyboardBundleIdentifier }
+    public static let appGroupKey = DevAppIdentity.appGroup
 
     private static var appVersionString: String? {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String

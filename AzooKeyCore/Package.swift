@@ -86,6 +86,7 @@ let package = Package(
             name: "AzooKeyUtils",
             dependencies: [
                 "CustardKit",
+                "KeyboardExtensionUtils",
                 "KeyboardThemes",
                 "KeyboardViews",
             ],

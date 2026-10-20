@@ -1,0 +1,90 @@
+name: azooKey Dev unsigned IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dev-unsigned-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'H4M4CHi-ttr/azooKey'
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          lfs: true
+          persist-credentials: false
+      - name: Select Xcode 26.3 (Swift 6.2)
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.3'
+      - name: Check development identity
+        run: python3 scripts/verify_dev_build.py
+      - name: Test dictionary import package
+        if: hashFiles('DictionaryImport/Package.swift') != ''
+        run: swift test --package-path DictionaryImport --parallel
+      - name: Select an available iPhone simulator
+        run: |
+          xcrun simctl list devices available -j > "$RUNNER_TEMP/simulators.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          devices = json.loads((Path(os.environ['RUNNER_TEMP']) / 'simulators.json').read_text())['devices']
+          candidates = [d for runtime, values in devices.items() if 'iOS' in runtime for d in values if d['isAvailable'] and d['name'].startswith('iPhone')]
+          assert candidates, 'No available iPhone simulator'
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              env.write('SIMULATOR_ID=' + candidates[0]['udid'] + '\n')
+          PY
+      - name: Swift unit tests on iOS simulator
+        run: |
+          set -o pipefail
+          xcodebuild test -project azooKey.xcodeproj -scheme azooKeyTests \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -derivedDataPath build/tests -resultBundlePath build/DevTests.xcresult \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM= \
+            | tee "$RUNNER_TEMP/dev-tests.log"
+      - name: Build unsigned iPhone Release
+        run: |
+          set -o pipefail
+          xcodebuild build -project azooKey.xcodeproj -scheme MainApp \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build/device \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= DEVELOPMENT_TEAM= \
+            | tee "$RUNNER_TEMP/dev-build.log"
+      - name: Package and verify unsigned IPA
+        run: |
+          set -euo pipefail
+          mkdir -p build/ipa/Payload
+          ditto build/device/Build/Products/Release-iphoneos/azooKey.app build/ipa/Payload/azooKey.app
+          test -f build/ipa/Payload/azooKey.app/PlugIns/Keyboard.appex/Keyboard
+          find build/ipa/Payload -type d -name _CodeSignature -prune -exec rm -rf {} +
+          find build/ipa/Payload -name embedded.mobileprovision -delete
+          (cd build/ipa && /usr/bin/zip -q -r -y ../azooKey-Dev-unsigned.ipa Payload)
+          python3 scripts/verify_dev_build.py --ipa build/azooKey-Dev-unsigned.ipa
+          shasum -a 256 build/azooKey-Dev-unsigned.ipa > build/azooKey-Dev-unsigned.ipa.sha256
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: azooKey-Dev-unsigned-${{ github.sha }}
+          path: |
+            build/azooKey-Dev-unsigned.ipa
+            build/azooKey-Dev-unsigned.ipa.sha256
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload verification logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: azooKey-Dev-verification-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/dev-tests.log
+            ${{ runner.temp }}/dev-build.log
+            build/DevTests.xcresult
+          retention-days: 14

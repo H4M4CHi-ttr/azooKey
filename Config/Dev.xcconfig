@@ -1,0 +1,7 @@
+// Fork-only identity. Both Debug and Release in this fork use these values.
+AZOOKEY_APP_BUNDLE_ID = io.github.h4m4chi-ttr.azookey.dev.a159b2
+AZOOKEY_KEYBOARD_BUNDLE_ID = $(AZOOKEY_APP_BUNDLE_ID).keyboard
+AZOOKEY_APP_GROUP = group.$(AZOOKEY_APP_BUNDLE_ID)
+AZOOKEY_URL_SCHEME = azooKeyDev
+AZOOKEY_DISPLAY_NAME = azooKey Dev
+AZOOKEY_APP_ICON = AppIconDev
