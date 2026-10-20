@@ -22,6 +22,10 @@ def verify_source():
     project = (ROOT / "azooKey.xcodeproj/project.pbxproj").read_text(encoding="utf-8")
     assert "PRODUCT_BUNDLE_IDENTIFIER = DevEn3." not in project
     assert project.count("baseConfigurationReference = A159B2000000000000000001") == 2
+    assert project.count("productName = DictionaryImport;") == 2, "Main app and tests must link DictionaryImport directly"
+    for phase, build_file in (("1A3DC1BF2500D44A002CAA93", "A159B2000000000000000005"), ("1A3DC1D52500D44E002CAA93", "A159B2000000000000000006")):
+        framework_files = re.search(phase + r" /\* Frameworks \*/ = \{.*?files = \((.*?)\);", project, re.S)
+        assert framework_files and build_file in framework_files.group(1), "Missing parser framework link"
     for relative in ("MainApp/azooKey.entitlements", "Keyboard/Keyboard.entitlements"):
         entitlements = plistlib.loads((ROOT / relative).read_bytes())
         assert entitlements == {"com.apple.security.application-groups": ["$(AZOOKEY_APP_GROUP)"]}

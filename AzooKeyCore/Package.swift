@@ -39,7 +39,6 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../DictionaryImport"),
         // Dependencies declare other packages that this package depends on.
         // MARK: You must specify version which results reproductive and stable result
         // MARK: `_: .upToNextMinor(Version)` or `exact: Version` or `revision: Version`.
@@ -86,7 +85,6 @@ let package = Package(
         .target(
             name: "AzooKeyUtils",
             dependencies: [
-                .product(name: "DictionaryImport", package: "DictionaryImport"),
                 "CustardKit",
                 "KeyboardExtensionUtils",
                 "KeyboardThemes",

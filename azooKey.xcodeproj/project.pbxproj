@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A159B2000000000000000005 /* DictionaryImport in Frameworks */ = {isa = PBXBuildFile; productRef = A159B2000000000000000003 /* DictionaryImport */; };
+		A159B2000000000000000006 /* DictionaryImport in Frameworks */ = {isa = PBXBuildFile; productRef = A159B2000000000000000004 /* DictionaryImport */; };
 		AA0774002026101800000001 /* AzooKeyUtils in Frameworks */ = {isa = PBXBuildFile; productRef = AA0774002026101800000002 /* AzooKeyUtils */; };
 		AA2700012026091700000001 /* KeyboardViews in Frameworks */ = {isa = PBXBuildFile; productRef = AA2700012026091700000002 /* KeyboardViews */; };
 		1A2E58542951EC87004F959B /* (null) in Sources */ = {isa = PBXBuildFile; };
@@ -177,6 +179,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A159B2000000000000000005 /* DictionaryImport in Frameworks */,
 				1A7F37832A69874C009AC382 /* KeyboardThemes in Frameworks */,
 				1A7F37742A683428009AC382 /* SwiftUIUtils in Frameworks */,
 				1AF306022A00070000B4DAC3 /* KanaKanjiConverterModule in Frameworks */,
@@ -189,6 +192,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A159B2000000000000000006 /* DictionaryImport in Frameworks */,
 				AA0774002026101800000001 /* AzooKeyUtils in Frameworks */,
 				1ABDFC352A18C60A00CED3A3 /* KanaKanjiConverterModuleWithDefaultDictionary in Frameworks */,
 				AA2700012026091700000001 /* KeyboardViews in Frameworks */,
@@ -332,6 +336,7 @@
 			);
 			name = azooKey;
 			packageProductDependencies = (
+				A159B2000000000000000003 /* DictionaryImport */,
 				1AF306012A00070000B4DAC3 /* KanaKanjiConverterModule */,
 				1A7F37732A683428009AC382 /* SwiftUIUtils */,
 				1A7F37822A69874C009AC382 /* KeyboardThemes */,
@@ -361,6 +366,7 @@
 			);
 			name = azooKeyTests;
 			packageProductDependencies = (
+				A159B2000000000000000004 /* DictionaryImport */,
 				AA0774002026101800000002 /* AzooKeyUtils */,
 				1ABDFC342A18C60A00CED3A3 /* KanaKanjiConverterModuleWithDefaultDictionary */,
 				AA2700012026091700000002 /* KeyboardViews */,
@@ -455,6 +461,7 @@
 			);
 			mainGroup = 1A3DC1B92500D44A002CAA93;
 			packageReferences = (
+				A159B2000000000000000002 /* DictionaryImport */,
 			);
 			productRefGroup = 1A3DC1C32500D44A002CAA93 /* Products */;
 			projectDirPath = "";
@@ -1026,7 +1033,24 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		A159B2000000000000000002 /* DictionaryImport */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = DictionaryImport;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		A159B2000000000000000003 /* DictionaryImport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A159B2000000000000000002 /* DictionaryImport */;
+			productName = DictionaryImport;
+		};
+		A159B2000000000000000004 /* DictionaryImport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A159B2000000000000000002 /* DictionaryImport */;
+			productName = DictionaryImport;
+		};
 		AA0774002026101800000002 /* AzooKeyUtils */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AzooKeyUtils;
