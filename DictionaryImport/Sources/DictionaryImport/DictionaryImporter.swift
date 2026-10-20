@@ -15,8 +15,16 @@ public struct ImportEntry: Sendable, Equatable {
     }
 
     public static func normalizedReading(_ value: String) -> String {
-        value.precomposedStringWithCanonicalMapping
-            .applyingTransform(.hiraganaToKatakana, reverse: true) ?? value
+        var scalars = String.UnicodeScalarView()
+        for scalar in value.precomposedStringWithCanonicalMapping.unicodeScalars {
+            if (0x30A1...0x30F6).contains(scalar.value) || (0x30FD...0x30FE).contains(scalar.value),
+               let hiragana = UnicodeScalar(scalar.value - 0x60) {
+                scalars.append(hiragana)
+            } else {
+                scalars.append(scalar)
+            }
+        }
+        return String(scalars)
     }
 
     fileprivate var key: Key { Key(ruby: ruby, word: word) }

@@ -104,4 +104,11 @@ final class DictionaryImporterTests: XCTestCase {
         XCTAssertEqual(result.errorCount, 2)
         XCTAssertEqual(result.entries.map(\.word), ["<database>"])
     }
+
+    func testReadingNormalizationPreservesLongVowelsAndCombinesVoicing() {
+        XCTAssertEqual(ImportEntry.normalizedReading("ハロー"), "はろー")
+        XCTAssertEqual(ImportEntry.normalizedReading("はろー"), "はろー")
+        XCTAssertEqual(ImportEntry.normalizedReading("ウ\u{3099}ァ"), "ゔぁ")
+        XCTAssertEqual(ImportEntry.normalizedReading("ABC123"), "ABC123")
+    }
 }

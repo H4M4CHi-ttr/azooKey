@@ -32,7 +32,7 @@ jobs:
           retention-days: 14
   build:
     if: github.repository == 'H4M4CHi-ttr/azooKey'
-    runs-on: macos-15
+    runs-on: macos-15-intel
     timeout-minutes: 60
     concurrency:
       group: dev-unsigned-${{ github.ref }}
@@ -51,6 +51,37 @@ jobs:
         run: |
           python3 scripts/verify_dev_build.py
           python3 -m unittest discover -s scripts -p 'test_*.py'
+      - name: Checkout Phase A baseline without the importer
+        uses: actions/checkout@v6
+        with:
+          ref: d4d59619b2abcc4ffaa5072d36fb922367efbc50
+          path: .baseline
+          submodules: recursive
+          lfs: true
+          persist-credentials: false
+      - name: Build and package Phase A baseline
+        run: |
+          set -euo pipefail
+          xcodebuild build -project .baseline/azooKey.xcodeproj -scheme MainApp \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/baseline-derived" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= DEVELOPMENT_TEAM= \
+            | tee "$RUNNER_TEMP/baseline-build.log"
+          mkdir -p build/baseline-ipa/Payload
+          ditto "$RUNNER_TEMP/baseline-derived/Build/Products/Release-iphoneos/azooKey.app" build/baseline-ipa/Payload/azooKey.app
+          find build/baseline-ipa/Payload -type d -name _CodeSignature -prune -exec rm -rf {} +
+          find build/baseline-ipa/Payload -name embedded.mobileprovision -delete
+          (cd build/baseline-ipa && /usr/bin/zip -q -r -y ../azooKey-Dev-baseline-unsigned.ipa Payload)
+          python3 scripts/verify_dev_build.py --ipa build/azooKey-Dev-baseline-unsigned.ipa
+          shasum -a 256 build/azooKey-Dev-baseline-unsigned.ipa > build/azooKey-Dev-baseline-unsigned.ipa.sha256
+      - name: Upload Phase A baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: azooKey-Dev-baseline-d4d59619
+          path: |
+            build/azooKey-Dev-baseline-unsigned.ipa
+            build/azooKey-Dev-baseline-unsigned.ipa.sha256
+          retention-days: 14
       - name: Test dictionary import package
         if: hashFiles('DictionaryImport/Package.swift') != ''
         run: swift test --package-path DictionaryImport --parallel
@@ -116,5 +147,6 @@ jobs:
           path: |
             ${{ runner.temp }}/dev-tests.log
             ${{ runner.temp }}/dev-build.log
+            ${{ runner.temp }}/baseline-build.log
             build/DevTests.xcresult
           retention-days: 14
