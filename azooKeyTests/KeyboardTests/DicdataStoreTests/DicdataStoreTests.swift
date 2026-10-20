@@ -6,6 +6,7 @@
 //  Copyright © 2023 ensan. All rights reserved.
 //
 
+@testable import KanaKanjiConverterModule
 import KanaKanjiConverterModuleWithDefaultDictionary
 import XCTest
 
@@ -38,7 +39,13 @@ final class DicdataStoreTests: XCTestCase {
         for (key, word) in mustWords {
             var c = ComposingText()
             c.insertAtCursorPosition(key, inputStyle: .direct)
-            let result = dicdataStore.getLOUDSData(inputData: c, from: 0, to: c.input.endIndex - 1)
+            let result = dicdataStore.lookupDicdata(
+                composingText: c,
+                inputRange: (0, c.input.endIndex - 1 ..< c.input.endIndex),
+                surfaceRange: (0, c.convertTarget.count - 1 ..< c.convertTarget.count),
+                needTypoCorrection: false,
+                state: dicdataStore.prepareState()
+            )
             // 冗長な書き方だが、こうすることで「どの項目でエラーが発生したのか」がはっきりするため、こう書いている。
             XCTAssertEqual(result.first(where: {$0.data.word == word})?.data.word, word)
         }
@@ -59,7 +66,13 @@ final class DicdataStoreTests: XCTestCase {
         for (key, word) in mustWords {
             var c = ComposingText()
             c.insertAtCursorPosition(key, inputStyle: .direct)
-            let result = dicdataStore.getLOUDSData(inputData: c, from: 0, to: c.input.endIndex - 1)
+            let result = dicdataStore.lookupDicdata(
+                composingText: c,
+                inputRange: (0, c.input.endIndex - 1 ..< c.input.endIndex),
+                surfaceRange: (0, c.convertTarget.count - 1 ..< c.convertTarget.count),
+                needTypoCorrection: false,
+                state: dicdataStore.prepareState()
+            )
             XCTAssertNil(result.first(where: {$0.data.word == word && $0.data.ruby == key}))
         }
     }
@@ -69,7 +82,7 @@ final class DicdataStoreTests: XCTestCase {
         do {
             var c = ComposingText()
             c.insertAtCursorPosition("ヘンカン", inputStyle: .roman2kana)
-            let result = dicdataStore.getLOUDSDataInRange(inputData: c, from: 0, toIndexRange: 2..<4)
+            let result = dicdataStore.lookupDicdata(composingText: c, surfaceRange: (0, 2..<4), state: dicdataStore.prepareState())
             XCTAssertFalse(result.contains(where: {$0.data.word == "変"}))
             XCTAssertTrue(result.contains(where: {$0.data.word == "変化"}))
             XCTAssertTrue(result.contains(where: {$0.data.word == "変換"}))
@@ -77,7 +90,7 @@ final class DicdataStoreTests: XCTestCase {
         do {
             var c = ComposingText()
             c.insertAtCursorPosition("ヘンカン", inputStyle: .roman2kana)
-            let result = dicdataStore.getLOUDSDataInRange(inputData: c, from: 0, toIndexRange: 0..<4)
+            let result = dicdataStore.lookupDicdata(composingText: c, surfaceRange: (0, 0..<4), state: dicdataStore.prepareState())
             XCTAssertTrue(result.contains(where: {$0.data.word == "変"}))
             XCTAssertTrue(result.contains(where: {$0.data.word == "変化"}))
             XCTAssertTrue(result.contains(where: {$0.data.word == "変換"}))
@@ -85,19 +98,22 @@ final class DicdataStoreTests: XCTestCase {
         do {
             var c = ComposingText()
             c.insertAtCursorPosition("ツカッ", inputStyle: .roman2kana)
-            let result = dicdataStore.getLOUDSDataInRange(inputData: c, from: 0, toIndexRange: 2..<3)
+            let result = dicdataStore.lookupDicdata(composingText: c, surfaceRange: (0, 2..<3), state: dicdataStore.prepareState())
             XCTAssertTrue(result.contains(where: {$0.data.word == "使っ"}))
         }
         do {
             var c = ComposingText()
             c.insertAtCursorPosition("ツカッt", inputStyle: .roman2kana)
-            let result = dicdataStore.getLOUDSDataInRange(inputData: c, from: 0, toIndexRange: 2..<4)
+            let result = dicdataStore.lookupDicdata(composingText: c, surfaceRange: (0, 2..<4), state: dicdataStore.prepareState())
             XCTAssertTrue(result.contains(where: {$0.data.word == "使っ"}))
         }
         do {
             var c = ComposingText()
             sequentialInput(&c, sequence: "tukatt", inputStyle: .roman2kana)
-            let result = dicdataStore.getLOUDSDataInRange(inputData: c, from: 0, toIndexRange: 4..<6)
+            // Current engine distinguishes raw roman-input indexes from converted-text indexes.
+            let inputResult = dicdataStore.lookupDicdata(composingText: c, inputRange: (0, 4..<6), state: dicdataStore.prepareState())
+            XCTAssertFalse(inputResult.contains(where: {$0.data.word == "使っ"}))
+            let result = dicdataStore.lookupDicdata(composingText: c, surfaceRange: (0, 2..<4), state: dicdataStore.prepareState())
             XCTAssertTrue(result.contains(where: {$0.data.word == "使っ"}))
         }
     }
