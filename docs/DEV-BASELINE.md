@@ -12,7 +12,7 @@
 
 `Config/Dev.xcconfig`をDebug/Release共通で読み込みます。正規版のApp Groupへのフォールバックやデータ移行は行いません。AltStoreが付加するチームIDは、開発版のグループに限って実行時に解決します。
 
-GitHub Actionsの **azooKey Dev unsigned IPA** を専用ブランチで手動実行します。macOS 15 / Xcode 26.3で、既存Swiftテスト、Releaseビルド、IPA内の本体・Keyboard.appexと識別子を検査します。App Store Connectへの送信処理やAppleの秘密情報は使いません。新規Workflowの手動実行UIはGitHubの既定ブランチ上の登録状態に依存します。登録が必要な場合は別途承認が必要です。既定ブランチを自動で変更しません。
+GitHub Actionsの **azooKey Dev unsigned IPA** を専用ブランチで手動実行します。macOS 15 / Xcode 26.3で、既存Swiftテスト、Releaseビルド、IPA内の本体・Keyboard.appexと識別子を検査します。App Store Connectへの送信処理やAppleの秘密情報は使いません。新規Workflowの手動実行は、既定ブランチにファイルがないため404になりました。ユーザーの明示許可を得て、専用ブランチ `feature/dev-dictionary-import` のpushでも実行するようにしました。mainは変更しません。
 
 ## 実機で確認する操作（すべて未検証）
 

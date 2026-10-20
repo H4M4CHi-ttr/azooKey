@@ -2,6 +2,8 @@ name: azooKey Dev unsigned IPA
 
 on:
   workflow_dispatch:
+  push:
+    branches: [feature/dev-dictionary-import]
 
 permissions:
   contents: read
